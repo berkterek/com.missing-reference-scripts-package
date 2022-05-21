@@ -84,8 +84,65 @@ namespace TerekGaming.EditorHelper
             }
         }
 
-        [MenuItem("Tools/Terek Gaming/Missing Scripts/Find And Auto Remove Missing Scripts in Project")]
-        private static void FindAndRemoveMissingInSelected()
+        [MenuItem("Tools/Terek Gaming/Missing Scripts/Find and Auto Remove Missing Scripts in Project")]
+        private static void FindAndAutoRemoveMissionScriptsInProject()
+        {
+            bool isMissingScriptExist = false;
+            string[] prefabPaths = AssetDatabase.GetAllAssetPaths()
+                .Where(x => x.EndsWith(".prefab", System.StringComparison.OrdinalIgnoreCase)).ToArray();
+            
+            foreach (string path in prefabPaths)
+            {
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                int compCount = 0;
+                int goCount = 0;
+
+                foreach (Component component in prefab.GetComponentsInChildren<Component>())
+                {
+                    if (component == null)
+                    {
+                        isMissingScriptExist = true;
+                        Debug.Log($"Prefab found with missing script <color=red>{path}</color>", prefab);
+                        var deeperSelection = prefab.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject);
+                        var prefabs = new HashSet<Object>();
+                       
+                        foreach (var go in deeperSelection)
+                        {
+                            int count = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(go);
+                            if (count > 0)
+                            {
+                                if (PrefabUtility.IsPartOfAnyPrefab(go))
+                                {
+                                    RecursivePrefabSource(go, prefabs, ref compCount, ref goCount);
+                                    count = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(go);
+                                    // if count == 0 the missing scripts has been removed from prefabs
+                                    if (count == 0)
+                                        continue;
+                                    // if not the missing scripts must be prefab overrides on this instance
+                                }
+
+                                Undo.RegisterCompleteObjectUndo(go, "Remove missing scripts");
+                                GameObjectUtility.RemoveMonoBehavioursWithMissingScript(go);
+                                compCount += count;
+                                goCount++;
+                            }
+                        }
+                    }
+                }
+                
+                if (!isMissingScriptExist)
+                {
+                    Debug.Log("<color=green>There is not missing script in project</color>");
+                }
+                else
+                {
+                    Debug.Log($"Found and removed {compCount} missing scripts from {goCount} GameObjects");    
+                }
+            }
+        }
+
+        [MenuItem("Tools/Terek Gaming/Missing Scripts/Auto Remove Missing Scripts in Selected Prefab")]
+        private static void AutoRemoveMissingInSelected()
         {
             // EditorUtility.CollectDeepHierarchy does not include inactive children
             var deeperSelection = Selection.gameObjects.SelectMany(go => go.GetComponentsInChildren<Transform>(true))
