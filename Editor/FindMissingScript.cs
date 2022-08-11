@@ -2,10 +2,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace TerekGaming.EditorHelper
 {
-    public static class FindMissingScript
+   public static class FindMissingScript
     {
         [MenuItem("Tools/Terek Gaming/Missing Scripts/Find Missing Scripts in Project")]
         static void FindMissingScriptsInProjectMenuItem()
@@ -18,14 +19,20 @@ namespace TerekGaming.EditorHelper
             {
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
-                foreach (Component component in prefab.GetComponentsInChildren<Component>())
+                try
                 {
-                    if (component == null)
+                    foreach (Component component in prefab.GetComponentsInChildren<Component>())
                     {
-                        isMissingScriptExist = true;
-                        Debug.Log($"Prefab found with missing script <color=red>{path}</color>", prefab);
-                        break;
+                        if (component == null)
+                        {
+                            isMissingScriptExist = true;
+                            Debug.Log($"Prefab found with missing script <color=red>{path}</color>", prefab);
+                            break;
+                        }
                     }
+                }
+                catch
+                {
                 }
             }
 
@@ -41,22 +48,29 @@ namespace TerekGaming.EditorHelper
             bool isMissingScriptExist = false;
             GameObject[] gameObjects = GameObject.FindObjectsOfType<GameObject>(true);
 
-            foreach (GameObject gameObject in gameObjects)
+            try
             {
-                foreach (Component component in gameObject.GetComponentsInChildren<Component>())
+                foreach (GameObject gameObject in gameObjects)
                 {
-                    if (component == null)
+                    foreach (Component component in gameObject.GetComponentsInChildren<Component>())
                     {
-                        isMissingScriptExist = true;
-                        Debug.Log($"Prefab found with missing script <color=red>{gameObject.name}</color>", gameObject);
-                        break;
+                        if (component == null)
+                        {
+                            isMissingScriptExist = true;
+                            Debug.Log($"Prefab found with missing script <color=red>{gameObject.name}</color>", gameObject);
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!isMissingScriptExist)
+                if (!isMissingScriptExist)
+                {
+                    Debug.Log("<color=green>There is not missing script in current scene</color>");
+                }
+
+            }
+            catch
             {
-                Debug.Log("<color=green>There is not missing script in current scene</color>");
             }
         }
 
